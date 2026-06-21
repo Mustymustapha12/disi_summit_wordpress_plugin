@@ -1,5 +1,5 @@
 DISI Summit Portal
-Version: 0.3.1
+Version: 0.3.2
 
 This plugin manages DISI Summit 2026 registrations inside WordPress.
 
@@ -32,7 +32,14 @@ Main features:
 - Payment status is displayed with clear badges and amounts use the naira symbol.
 - Approved registrations can have their payment-link email resent from the detail page.
 - Unpaid Paystack verification results now report the transaction status directly.
-- The dashboard shows total, pending, approved, and rejected registrations.
+- The dashboard shows total, pending, approved, rejected, and paid registration counts.
+- The dashboard shows accumulated registration fees, workshop add-ons, total expected amount, and verified amount paid.
+- The resend payment email action is available only for approved registrations that are still unpaid.
+- Registration exports use the active type, approval status, payment status, and search filters.
+- CSV exports include stored registration, source, approval, payment, and all submitted form fields.
+- PDF exports include a complete readable detail section for every matching registration.
+- CSV values are protected against spreadsheet formula execution.
+- PDF generation is bundled through FPDF 1.86 and does not require a server PDF extension.
 - The plugin applies DISI branding colors:
   Dark Azure #172b3b
   Dark Turquoise #157664

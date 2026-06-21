@@ -516,6 +516,7 @@ endif;
 
 <?php if (
     $registration->status === 'approved' &&
+    ($registration->payment_status ?? 'unpaid') !== 'paid' &&
     !empty($registration->paystack_authorization_url)
 ) : ?>
 

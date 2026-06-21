@@ -188,6 +188,41 @@ Filter
 
 </form>
 
+<?php
+$export_args = [
+    'action' => 'disi_export_registrations',
+    'type' => $type,
+    'status' => $status,
+    'payment_status' => $payment_status,
+    's' => $search
+];
+
+$csv_url = wp_nonce_url(
+    add_query_arg(
+        array_merge($export_args, ['format' => 'csv']),
+        admin_url('admin-post.php')
+    ),
+    'disi_export_registrations'
+);
+
+$pdf_url = wp_nonce_url(
+    add_query_arg(
+        array_merge($export_args, ['format' => 'pdf']),
+        admin_url('admin-post.php')
+    ),
+    'disi_export_registrations'
+);
+?>
+
+<div class="disi-export-actions">
+    <a class="button" href="<?php echo esc_url($csv_url); ?>">
+        Export CSV
+    </a>
+    <a class="button" href="<?php echo esc_url($pdf_url); ?>">
+        Export PDF
+    </a>
+</div>
+
 <br>
 
 <table class="widefat striped">

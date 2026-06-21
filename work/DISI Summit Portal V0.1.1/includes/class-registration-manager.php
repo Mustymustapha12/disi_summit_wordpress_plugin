@@ -409,6 +409,107 @@ class DISI_Registration_Manager {
              {$where}"
         );
     }
+
+    public static function get_filtered(
+        $type = '',
+        $status = '',
+        $payment_status = '',
+        $search = ''
+    ) {
+
+        global $wpdb;
+
+        $table = DISI_Database::get_table();
+        $where = self::filtered_where(
+            $type,
+            $status,
+            $payment_status,
+            $search
+        );
+
+        return $wpdb->get_results(
+            "SELECT *
+             FROM {$table}
+             {$where}
+             ORDER BY id DESC"
+        );
+    }
+
+    public static function amount_totals() {
+
+        global $wpdb;
+
+        $table = DISI_Database::get_table();
+
+        return $wpdb->get_row(
+            "SELECT
+                COALESCE(SUM(registration_amount), 0)
+                    AS registration_amount,
+                COALESCE(SUM(workshop_amount), 0)
+                    AS workshop_amount,
+                COALESCE(SUM(total_amount), 0)
+                    AS total_amount,
+                COALESCE(SUM(
+                    CASE
+                        WHEN payment_status = 'paid'
+                        THEN total_amount
+                        ELSE 0
+                    END
+                ), 0) AS paid_amount
+             FROM {$table}"
+        );
+    }
+
+    private static function filtered_where(
+        $type,
+        $status,
+        $payment_status,
+        $search
+    ) {
+
+        global $wpdb;
+
+        $where = "WHERE 1=1";
+
+        if (!empty($type)) {
+            $where .= $wpdb->prepare(
+                " AND registration_type = %s",
+                $type
+            );
+        }
+
+        if (!empty($status)) {
+            $where .= $wpdb->prepare(
+                " AND status = %s",
+                $status
+            );
+        }
+
+        if (!empty($payment_status)) {
+            $where .= $wpdb->prepare(
+                " AND payment_status = %s",
+                $payment_status
+            );
+        }
+
+        if (!empty($search)) {
+            $term = '%' . $wpdb->esc_like($search) . '%';
+            $where .= $wpdb->prepare(
+                " AND (
+                    email LIKE %s
+                    OR first_name LIKE %s
+                    OR last_name LIKE %s
+                    OR business_name LIKE %s
+                )",
+                $term,
+                $term,
+                $term,
+                $term
+            );
+        }
+
+        return $where;
+    }
     /**
      * Approve registration
      */
