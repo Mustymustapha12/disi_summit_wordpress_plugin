@@ -142,6 +142,8 @@ class DISI_Registration_Manager {
 
                 'status' => 'pending',
 
+                'payment_status' => 'unpaid',
+
                 'submitted_data' =>
                     wp_json_encode(
                         $data['submitted_data'] ?? []
@@ -204,23 +206,6 @@ class DISI_Registration_Manager {
                 $id
             )
 
-        );
-    }
-
-    /**
-     * Delete registration
-     */
-    public static function delete($id) {
-
-        global $wpdb;
-
-        $table = DISI_Database::get_table();
-
-        return $wpdb->delete(
-            $table,
-            [
-                'id' => intval($id)
-            ]
         );
     }
 
@@ -410,83 +395,222 @@ class DISI_Registration_Manager {
      * Approve registration
      */
     public static function approve(
-        $registration_id
-        ) {
+        $registration_id,
+        $group_custom_amount = 0
+    ) {
 
         global $wpdb;
 
-        $registration =
-        self::get(
-            $registration_id
-        );
+        $registration = self::get($registration_id);
 
         if (
             !$registration ||
             $registration->status !== 'pending'
         ) {
-            return false;
+            return new WP_Error(
+                'invalid_registration_status',
+                'Only pending registrations can be approved.'
+            );
         }
 
-        $table =
-        DISI_Database::get_table();
+        if (
+            $registration->registration_type === 'group_booking' &&
+            self::normalize_amount($group_custom_amount) > 0
+        ) {
+            $registration_amount = self::normalize_amount(
+                $group_custom_amount
+            );
+            $total_amount = $registration_amount +
+                self::normalize_amount($registration->workshop_amount ?? 0);
 
-        $updated = $wpdb->update(
-
-            $table,
-
-            [
-
-                'status' => 'approved',
-
-                'approved_by' =>
-                    get_current_user_id(),
-
-                'approved_at' =>
-                    current_time('mysql'),
-
-                'updated_at' =>
-                    current_time('mysql')
-
-            ],
-
-            [
-
-                'id' =>
-                    intval(
-                        $registration_id
-                    )
-
-            ]
-
-        );
-
-        if ($updated !== false) {
-
-            $registration =
-            self::get(
-                $registration_id
+            $amount_updated = $wpdb->update(
+                DISI_Database::get_table(),
+                [
+                    'registration_amount' => $registration_amount,
+                    'total_amount' => $total_amount,
+                    'updated_at' => current_time('mysql')
+                ],
+                ['id' => intval($registration_id)]
             );
 
-            error_log(
-                'DISI APPROVAL EMAIL FUNCTION CALLED'
-            );
-
-            if (
-                class_exists(
-                    'DISI_Email'
-                )
-            ) {
-
-                DISI_Email::send_approval_email(
-                    $registration
+            if ($amount_updated === false) {
+                return new WP_Error(
+                    'group_amount_update_failed',
+                    'The custom group amount could not be saved.'
                 );
             }
+
+            $registration = self::get($registration_id);
         }
 
-        return $updated;
-        
+        $transaction = DISI_Paystack::initialize_transaction(
+            $registration
+        );
 
+        if (is_wp_error($transaction)) {
+            return $transaction;
         }
+
+        $table = DISI_Database::get_table();
+
+        $updated = $wpdb->update(
+            $table,
+            [
+                'status' => 'approved',
+                'payment_status' => 'unpaid',
+                'paystack_authorization_url' =>
+                    $transaction['authorization_url'],
+                'paystack_reference' => $transaction['reference'],
+                'paystack_mode' => $transaction['mode'],
+                'approved_by' => get_current_user_id(),
+                'approved_at' => current_time('mysql'),
+                'updated_at' => current_time('mysql')
+            ],
+            ['id' => intval($registration_id)]
+        );
+
+        if ($updated === false) {
+            return new WP_Error(
+                'approval_update_failed',
+                !empty($wpdb->last_error)
+                    ? $wpdb->last_error
+                    : 'The registration could not be approved.'
+            );
+        }
+
+        $registration = self::get($registration_id);
+
+        if (class_exists('DISI_Email')) {
+            DISI_Email::send_approval_email($registration);
+        }
+
+        return true;
+    }
+
+    public static function verify_payment($reference) {
+
+        global $wpdb;
+
+        if (empty($reference)) {
+            return new WP_Error(
+                'missing_payment_reference',
+                'The payment reference is missing.'
+            );
+        }
+
+        $registration = self::get_by_paystack_reference($reference);
+
+        if (!$registration) {
+            return new WP_Error(
+                'unknown_payment_reference',
+                'No registration matches this payment reference.'
+            );
+        }
+
+        if (($registration->payment_status ?? '') === 'paid') {
+            return $registration;
+        }
+
+        $transaction = DISI_Paystack::verify_transaction($reference);
+
+        if (is_wp_error($transaction)) {
+            return $transaction;
+        }
+
+        $expected_amount = (int) round(
+            self::normalize_amount($registration->total_amount ?? 0) * 100
+        );
+        $metadata = $transaction['metadata'] ?? [];
+
+        if (is_string($metadata)) {
+            $metadata = json_decode($metadata, true);
+        }
+
+        $valid = (
+            ($transaction['status'] ?? '') === 'success' &&
+            ($transaction['reference'] ?? '') === $reference &&
+            intval($transaction['amount'] ?? 0) === $expected_amount &&
+            ($transaction['currency'] ?? '') === 'NGN' &&
+            sanitize_email(
+                $transaction['customer']['email'] ?? ''
+            ) === sanitize_email($registration->email) &&
+            ($transaction['domain'] ?? '') ===
+                ($registration->paystack_mode ?? 'test') &&
+            intval($metadata['registration_id'] ?? 0) ===
+                intval($registration->id)
+        );
+
+        if (!$valid) {
+            return new WP_Error(
+                'payment_verification_mismatch',
+                'The Paystack transaction does not match this registration.'
+            );
+        }
+
+        $paid_at = !empty($transaction['paid_at'])
+            ? get_date_from_gmt(
+                gmdate(
+                    'Y-m-d H:i:s',
+                    strtotime($transaction['paid_at'])
+                )
+            )
+            : current_time('mysql');
+
+        $updated = $wpdb->update(
+            DISI_Database::get_table(),
+            [
+                'payment_status' => 'paid',
+                'paystack_transaction_id' => sanitize_text_field(
+                    (string) ($transaction['id'] ?? '')
+                ),
+                'paid_at' => $paid_at,
+                'updated_at' => current_time('mysql')
+            ],
+            ['id' => intval($registration->id)]
+        );
+
+        if ($updated === false) {
+            return new WP_Error(
+                'payment_update_failed',
+                'The verified payment could not be saved.'
+            );
+        }
+
+        return self::get($registration->id);
+    }
+
+    public static function get_by_paystack_reference($reference) {
+
+        global $wpdb;
+
+        $table = DISI_Database::get_table();
+
+        return $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT *
+                 FROM {$table}
+                 WHERE paystack_reference = %s
+                 LIMIT 1",
+                sanitize_text_field($reference)
+            )
+        );
+    }
+
+    public static function payment_count($payment_status) {
+
+        global $wpdb;
+
+        $table = DISI_Database::get_table();
+
+        return $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*)
+                 FROM {$table}
+                 WHERE payment_status = %s",
+                sanitize_text_field($payment_status)
+            )
+        );
+    }
 
 
     /**
@@ -667,6 +791,7 @@ class DISI_Registration_Manager {
             'academic_researcher' => 'Academic/Researcher',
             'student' => 'Student',
             'group_booking' => 'Group Booking',
+            'workshop_only' => 'Workshop Only',
             'participant' => 'Participant'
         ];
 

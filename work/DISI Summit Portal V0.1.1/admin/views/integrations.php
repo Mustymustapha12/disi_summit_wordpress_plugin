@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+$existing_config = DISI_Settings::get_configuration();
+
 if (
     isset($_POST['disi_save_configuration']) &&
     check_admin_referer(
@@ -21,9 +23,27 @@ if (
             $_POST['participant_form'] ?? 0
         ),
 
-        'paystack_link' => esc_url_raw(
-            $_POST['paystack_link'] ?? ''
+        'paystack_secret_key' => !empty($_POST['paystack_secret_key'])
+            ? sanitize_text_field(
+                wp_unslash($_POST['paystack_secret_key'])
+            )
+            : ($existing_config['paystack_secret_key'] ?? ''),
+
+        'paystack_public_key' => sanitize_text_field(
+            wp_unslash($_POST['paystack_public_key'] ?? '')
         ),
+
+        'paystack_callback_url' => esc_url_raw(
+            wp_unslash($_POST['paystack_callback_url'] ?? '')
+        ),
+
+        'paystack_mode' => in_array(
+            $_POST['paystack_mode'] ?? 'test',
+            ['test', 'live'],
+            true
+        )
+            ? sanitize_text_field($_POST['paystack_mode'])
+            : 'test',
 
         'professional_amount' =>
             DISI_Registration_Manager::normalize_amount(
@@ -189,29 +209,77 @@ $amount_fields = [
             </tr>
 
             <tr>
-
-                <th>
-                    Paystack Payment Link
-                </th>
-
+                <th>Paystack Mode</th>
                 <td>
+                    <select name="paystack_mode">
+                        <option
+                            value="test"
+                            <?php selected($config['paystack_mode'] ?? 'test', 'test'); ?>
+                        >
+                            Test
+                        </option>
+                        <option
+                            value="live"
+                            <?php selected($config['paystack_mode'] ?? 'test', 'live'); ?>
+                        >
+                            Live
+                        </option>
+                    </select>
+                    <p class="description">
+                        The selected mode must match the configured API keys.
+                    </p>
+                </td>
+            </tr>
 
+            <tr>
+                <th>Paystack Secret Key</th>
+                <td>
+                    <input
+                        type="password"
+                        name="paystack_secret_key"
+                        class="regular-text"
+                        value=""
+                        autocomplete="new-password"
+                        placeholder="<?php
+                        echo !empty($config['paystack_secret_key'])
+                            ? 'Saved - leave blank to keep current key'
+                            : 'sk_test_...';
+                        ?>"
+                    >
+                    <p class="description">
+                        Used securely on the server to initialize and verify payments.
+                        The saved key is never displayed.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <th>Paystack Public Key</th>
+                <td>
+                    <input
+                        type="text"
+                        name="paystack_public_key"
+                        class="regular-text"
+                        value="<?php echo esc_attr($config['paystack_public_key'] ?? ''); ?>"
+                        placeholder="pk_test_..."
+                    >
+                </td>
+            </tr>
+
+            <tr>
+                <th>Callback / Thank-you URL</th>
+                <td>
                     <input
                         type="url"
-                        name="paystack_link"
+                        name="paystack_callback_url"
                         class="regular-text"
-                        value="<?php echo esc_attr($config['paystack_link'] ?? ''); ?>"
-                        placeholder="https://paystack.com/pay/..."
+                        value="<?php echo esc_attr($config['paystack_callback_url'] ?? ''); ?>"
+                        placeholder="<?php echo esc_attr(home_url('/')); ?>"
                     >
-
                     <p class="description">
-
-                        This link is sent to approved registrants.
-
+                        After server-side verification, the participant is redirected here.
                     </p>
-
                 </td>
-
             </tr>
 
             <?php foreach ($amount_fields as $field => $label) : ?>

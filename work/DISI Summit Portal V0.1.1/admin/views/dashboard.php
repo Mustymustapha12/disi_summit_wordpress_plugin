@@ -27,11 +27,16 @@ $pending +
 $approved +
 $rejected;
 
+$paid =
+DISI_Registration_Manager::payment_count(
+    'paid'
+);
+
 ?>
 
 <div class="wrap">
 
-<h1>DISI Summit Portal V0.2.1</h1>
+<h1>DISI Summit Portal V0.3.0</h1>
 
 <div class="disi-dashboard-grid">
 
@@ -78,6 +83,18 @@ $rejected;
         <div class="count">
 
             <?php echo esc_html($rejected); ?>
+
+        </div>
+
+    </div>
+
+    <div class="disi-dashboard-card disi-dashboard-card-approved">
+
+        <h3>Paid Registrations</h3>
+
+        <div class="count">
+
+            <?php echo esc_html($paid); ?>
 
         </div>
 

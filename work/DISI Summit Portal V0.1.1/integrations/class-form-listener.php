@@ -209,26 +209,9 @@ class DISI_Form_Listener {
 
     public function delete_gravityforms($entry_id) {
 
-        global $wpdb;
-
-        $form_id = '';
-
-        if (class_exists('GFAPI')) {
-
-            $entry = GFAPI::get_entry($entry_id);
-
-            if (!is_wp_error($entry)) {
-                $form_id = $entry['form_id'] ?? '';
-            }
-        }
-
-        if (empty($form_id)) {
-            return;
-        }
-
         DISI_Registration_Manager::delete_by_source_entry(
             'Gravity Forms',
-            $form_id,
+            0,
             $entry_id
         );
     }
@@ -465,6 +448,14 @@ class DISI_Form_Listener {
             implode(' ', array_merge(array_keys($data), array_values($data)))
         );
 
+        if (
+            strpos($haystack, 'workshop only') !== false ||
+            strpos($haystack, 'workshop-only') !== false ||
+            strpos($haystack, 'workshop_only') !== false
+        ) {
+            return 'workshop_only';
+        }
+
         if (strpos($haystack, 'academic') !== false ||
             strpos($haystack, 'researcher') !== false) {
             return 'academic_researcher';
@@ -529,8 +520,13 @@ class DISI_Form_Listener {
             'professional' => 'professional_amount',
             'academic_researcher' => 'academic_amount',
             'student' => 'student_amount',
-            'group_booking' => 'group_booking_amount'
+            'group_booking' => 'group_booking_amount',
+            'workshop_only' => ''
         ];
+
+        if ($registration_type === 'workshop_only') {
+            return 0;
+        }
 
         $amount =
         DISI_Registration_Manager::normalize_amount(

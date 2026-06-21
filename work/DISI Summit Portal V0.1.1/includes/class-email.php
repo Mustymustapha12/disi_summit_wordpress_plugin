@@ -14,12 +14,9 @@ class DISI_Email {
             return false;
         }
 
-        $config =
-        DISI_Settings::get_configuration();
-
         $payment_link =
         esc_url(
-            $config['paystack_link'] ?? ''
+            $registration->paystack_authorization_url ?? ''
         );
 
         $registration_number =
@@ -72,6 +69,10 @@ class DISI_Email {
                 <tr>
                     <td>Total Amount to Pay</td>
                     <td><strong>' . esc_html($total_amount) . '</strong></td>
+                </tr>
+                <tr>
+                    <td>Payment Reference</td>
+                    <td><strong>' . esc_html($registration->paystack_reference ?? '') . '</strong></td>
                 </tr>
             </table>
 
@@ -220,10 +221,6 @@ class DISI_Email {
 
         $amount =
         floatval($amount);
-
-        if ($amount <= 0) {
-            return 'To be confirmed';
-        }
 
         return 'NGN ' .
         number_format(

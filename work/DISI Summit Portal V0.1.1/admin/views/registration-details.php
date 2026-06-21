@@ -10,41 +10,31 @@ if (!defined('ABSPATH')) {
 */
 
 $id = intval($_GET['id'] ?? 0);
-$action = sanitize_text_field($_GET['action'] ?? '');
-$nonce = sanitize_text_field(
-    wp_unslash($_GET['_wpnonce'] ?? '')
-);
 
 if (
-    $action === 'approve' &&
-    wp_verify_nonce($nonce, 'disi_approve_' . $id)
+    isset($_POST['disi_approve_registration']) &&
+    check_admin_referer('disi_approve_' . $id)
 ) {
-    DISI_Registration_Manager::approve($id);
+    $approval = DISI_Registration_Manager::approve(
+        $id,
+        $_POST['group_custom_amount'] ?? 0
+    );
 
-    echo '
-    <div class="notice notice-success">
-    <p>Registration approved successfully.</p>
-    </div>
-    ';
-}
-
-if (
-    $action === 'delete' &&
-    wp_verify_nonce($nonce, 'disi_delete_' . $id)
-) {
-    DISI_Registration_Manager::delete($id);
-
-    echo '
-    <div class="notice notice-success">
-        <p>
-            Registration deleted successfully.
-            <a href="' .
-            esc_url(admin_url('admin.php?page=disi-registrations')) .
-            '">Return to registrations</a>.
-        </p>
-    </div>
-    ';
-    return;
+    if (is_wp_error($approval)) {
+        echo '
+        <div class="notice notice-error">
+            <p>' . esc_html($approval->get_error_message()) . '</p>
+        </div>
+        ';
+    } else {
+        echo '
+        <div class="notice notice-success">
+            <p>
+                Registration approved and Paystack payment link generated.
+            </p>
+        </div>
+        ';
+    }
 }
 
 if (
@@ -69,6 +59,31 @@ if (
     </p>
     </div>
     ';
+}
+
+if (
+    isset($_POST['disi_verify_payment']) &&
+    check_admin_referer('disi_verify_payment_' . $id)
+) {
+    $verification = DISI_Registration_Manager::verify_payment(
+        sanitize_text_field(
+            wp_unslash($_POST['paystack_reference'] ?? '')
+        )
+    );
+
+    if (is_wp_error($verification)) {
+        echo '
+        <div class="notice notice-error">
+            <p>' . esc_html($verification->get_error_message()) . '</p>
+        </div>
+        ';
+    } else {
+        echo '
+        <div class="notice notice-success">
+            <p>Payment verified successfully.</p>
+        </div>
+        ';
+    }
 }
 
 $registration =
@@ -182,6 +197,60 @@ floatval($registration->total_amount ?? 0),
 ?>
 
 </div>
+
+<div>
+
+<strong>Payment Status:</strong>
+
+<?php
+echo esc_html(
+    ucfirst($registration->payment_status ?? 'unpaid')
+);
+?>
+
+</div>
+
+<?php if (!empty($registration->paystack_reference)) : ?>
+
+<div>
+
+<strong>Paystack Reference:</strong>
+
+<?php echo esc_html($registration->paystack_reference); ?>
+
+</div>
+
+<?php endif; ?>
+
+<?php if (!empty($registration->paystack_authorization_url)) : ?>
+
+<div>
+
+<strong>Payment Link:</strong>
+
+<a
+href="<?php echo esc_url($registration->paystack_authorization_url); ?>"
+target="_blank"
+rel="noopener noreferrer"
+>
+Open Paystack Checkout
+</a>
+
+</div>
+
+<?php endif; ?>
+
+<?php if (!empty($registration->paid_at)) : ?>
+
+<div>
+
+<strong>Paid At:</strong>
+
+<?php echo esc_html($registration->paid_at); ?>
+
+</div>
+
+<?php endif; ?>
 
 <?php if (!empty($registration->rejection_reason)) : ?>
 
@@ -303,31 +372,54 @@ endif;
 
 <?php if ($registration->status === 'pending') : ?>
 
-    <a
-    href="<?php
-
-    echo wp_nonce_url(
-
-        admin_url(
-
-            'admin.php?page=disi-registration-view&id=' .
-            $registration->id .
-            '&action=approve'
-
-        ),
-
-        'disi_approve_' .
-        $registration->id
-
-    );
-
-    ?>"
-    class="button disi-approve-btn"
+    <form
+    method="post"
+    style="display:block;width:100%;margin-bottom:20px;"
     >
 
-    Approve Registration
+        <?php wp_nonce_field('disi_approve_' . $registration->id); ?>
 
-    </a>
+        <?php if ($registration->registration_type === 'group_booking') : ?>
+
+            <p>
+                <label for="disi-group-custom-amount">
+                    <strong>Group booking custom amount</strong>
+                </label>
+            </p>
+
+            <input
+            id="disi-group-custom-amount"
+            name="group_custom_amount"
+            type="text"
+            inputmode="decimal"
+            value="<?php echo esc_attr(
+                number_format(
+                    floatval($registration->registration_amount ?? 0),
+                    2,
+                    '.',
+                    ','
+                )
+            ); ?>"
+            required
+            >
+
+            <p class="description">
+                Enter the total group registration amount before any workshop add-on.
+            </p>
+
+        <?php endif; ?>
+
+        <p>
+            <button
+            type="submit"
+            name="disi_approve_registration"
+            class="button disi-approve-btn"
+            >
+            Approve and Generate Payment Link
+            </button>
+        </p>
+
+    </form>
 
     <form
     method="post"
@@ -369,12 +461,33 @@ endif;
 
 <?php endif; ?>
 
-<?php if ($registration->status !== 'pending') : ?>
+<?php if (
+    $registration->status === 'approved' &&
+    ($registration->payment_status ?? 'unpaid') !== 'paid' &&
+    !empty($registration->paystack_reference)
+) : ?>
 
+    <form method="post" style="display:inline-block;">
+        <?php
+        wp_nonce_field(
+            'disi_verify_payment_' . $registration->id
+        );
+        ?>
+        <input
+        type="hidden"
+        name="paystack_reference"
+        value="<?php echo esc_attr($registration->paystack_reference); ?>"
+        >
+        <button
+        type="submit"
+        name="disi_verify_payment"
+        class="button"
+        >
+        Verify Payment
+        </button>
+    </form>
 
 <?php endif; ?>
-
-
 
 <a
 href="<?php echo admin_url(
@@ -385,25 +498,6 @@ class="button"
 
 Back
 
-</a>
-
-<a
-href="<?php
-echo esc_url(
-    wp_nonce_url(
-        admin_url(
-            'admin.php?page=disi-registration-view&id=' .
-            $registration->id .
-            '&action=delete'
-        ),
-        'disi_delete_' . $registration->id
-    )
-);
-?>"
-class="button button-link-delete"
-onclick="return confirm('Permanently delete this registration from the DISI Portal?');"
->
-Delete Registration
 </a>
 
 </div>

@@ -5,10 +5,10 @@ payment notifications, and form-provider integration.
 
 ## Latest Release
 
-Version `0.2.1`
+Version `0.3.0`
 
 Installable package:
-`outputs/disi-summit-portal-v0.2.1.zip`
+`outputs/disi-summit-portal-v0.3.0.zip`
 
 ## Source
 
@@ -17,4 +17,3 @@ The editable plugin source is in:
 
 The internal folder name remains stable so WordPress replaces the installed
 plugin during ZIP uploads instead of creating a second plugin.
-

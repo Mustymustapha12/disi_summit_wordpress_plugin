@@ -51,6 +51,18 @@ class DISI_Database {
 
             status VARCHAR(20) NOT NULL DEFAULT 'pending',
 
+            payment_status VARCHAR(20) NOT NULL DEFAULT 'unpaid',
+
+            paystack_authorization_url TEXT NULL,
+
+            paystack_reference VARCHAR(100) NULL,
+
+            paystack_transaction_id VARCHAR(100) NULL,
+
+            paystack_mode VARCHAR(10) NULL,
+
+            paid_at DATETIME NULL,
+
             submitted_data LONGTEXT NULL,
 
             wp_user_id BIGINT NULL,
@@ -70,6 +82,10 @@ class DISI_Database {
             KEY source_entry_idx (source_plugin, form_id, source_entry_id),
 
             KEY status_idx (status),
+
+            KEY payment_status_idx (payment_status),
+
+            KEY paystack_reference_idx (paystack_reference),
 
             KEY registration_type_idx (registration_type)
 
@@ -158,7 +174,31 @@ class DISI_Database {
 
             'rejection_reason' =>
                 "ALTER TABLE {$table}
-                 ADD rejection_reason TEXT NULL"
+                 ADD rejection_reason TEXT NULL",
+
+            'payment_status' =>
+                "ALTER TABLE {$table}
+                 ADD payment_status VARCHAR(20) NOT NULL DEFAULT 'unpaid'",
+
+            'paystack_authorization_url' =>
+                "ALTER TABLE {$table}
+                 ADD paystack_authorization_url TEXT NULL",
+
+            'paystack_reference' =>
+                "ALTER TABLE {$table}
+                 ADD paystack_reference VARCHAR(100) NULL",
+
+            'paystack_transaction_id' =>
+                "ALTER TABLE {$table}
+                 ADD paystack_transaction_id VARCHAR(100) NULL",
+
+            'paystack_mode' =>
+                "ALTER TABLE {$table}
+                 ADD paystack_mode VARCHAR(10) NULL",
+
+            'paid_at' =>
+                "ALTER TABLE {$table}
+                 ADD paid_at DATETIME NULL"
         ];
 
         foreach ($required_columns as $column => $query) {

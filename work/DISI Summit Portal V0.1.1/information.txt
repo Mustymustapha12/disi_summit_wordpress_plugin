@@ -1,5 +1,5 @@
 DISI Summit Portal
-Version: 0.2.1
+Version: 0.3.0
 
 This plugin manages DISI Summit 2026 registrations inside WordPress.
 
@@ -17,9 +17,16 @@ Main features:
 - Rejection emails include the DISI Summit 2026 branding, registration number, and rejection reason.
 - Registration details hide internal form metadata fields such as Fluent Form embedded post ID, Fluentform nonce, and WordPress HTTP referer.
 - Registrations can be removed automatically when supported source form entries are deleted.
-- Admins can permanently delete any registration from the registration list or detail page.
 - Integration amount fields display thousands separators while remaining usable for pricing calculations.
 - Database schema upgrades run automatically after in-place plugin updates.
+- Portal-side delete controls are removed. Registrations are deleted from the portal when their supported source form entry is deleted.
+- Paystack test/live API settings include secret key, public key, and callback/thank-you URL.
+- Approval initializes a unique Paystack transaction and emails its authorization URL to the participant.
+- Paystack references and authorization URLs are stored against registrations.
+- Payment callbacks are verified against Paystack, including reference, amount, currency, email, mode, and registration metadata.
+- Successfully verified registrations are marked paid and include payment time and Paystack transaction ID.
+- Workshop-only registrations are priced using only the configured workshop amount.
+- Group bookings support a custom registration amount during approval, with any workshop add-on applied separately.
 - The dashboard shows total, pending, approved, and rejected registrations.
 - The plugin applies DISI branding colors:
   Dark Azure #172b3b

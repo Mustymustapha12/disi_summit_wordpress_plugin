@@ -4,20 +4,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$delete_id = intval($_GET['delete_id'] ?? 0);
-$deleted = false;
-
-if (
-    $delete_id > 0 &&
-    isset($_GET['_wpnonce']) &&
-    wp_verify_nonce(
-        sanitize_text_field(wp_unslash($_GET['_wpnonce'])),
-        'disi_delete_' . $delete_id
-    )
-) {
-    $deleted = DISI_Registration_Manager::delete($delete_id) !== false;
-}
-
 $page = max(
     1,
     intval($_GET['paged'] ?? 1)
@@ -69,12 +55,6 @@ Registrations
 
 <hr class="wp-header-end">
 
-<?php if ($deleted) : ?>
-<div class="notice notice-success is-dismissible">
-    <p>Registration deleted successfully.</p>
-</div>
-<?php endif; ?>
-
 <form method="get">
 
 <input
@@ -115,6 +95,13 @@ value="group_booking"
 <?php selected($type, 'group_booking'); ?>
 >
 Group Booking
+</option>
+
+<option
+value="workshop_only"
+<?php selected($type, 'workshop_only'); ?>
+>
+Workshop Only
 </option>
 
 </select>
@@ -186,6 +173,7 @@ Filter
 <th>Name</th>
 <th>Email</th>
 <th>Status</th>
+<th>Payment</th>
 <th>Date</th>
 <th>Actions</th>
 
@@ -285,6 +273,16 @@ $row->status
 
 <?php
 echo esc_html(
+    ucfirst($row->payment_status ?? 'unpaid')
+);
+?>
+
+</td>
+
+<td>
+
+<?php
+echo esc_html(
 $row->created_at
 );
 ?>
@@ -303,27 +301,6 @@ $row->id
 View
 </a>
 
-<a
-class="button button-small button-link-delete"
-href="<?php
-echo esc_url(
-    wp_nonce_url(
-        add_query_arg(
-            [
-                'page' => 'disi-registrations',
-                'delete_id' => $row->id
-            ],
-            admin_url('admin.php')
-        ),
-        'disi_delete_' . $row->id
-    )
-);
-?>"
-onclick="return confirm('Permanently delete this registration from the DISI Portal?');"
->
-Delete
-</a>
-
 </td>
 
 </tr>
@@ -334,7 +311,7 @@ Delete
 
 <tr>
 
-<td colspan="7">
+<td colspan="8">
 
 No registrations found.
 
