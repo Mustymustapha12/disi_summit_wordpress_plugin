@@ -1,0 +1,33 @@
+DISI Summit Portal
+Version: 0.2.1
+
+This plugin manages DISI Summit 2026 registrations inside WordPress.
+
+Main features:
+- Captures registrations from a selected form provider and selected registration form.
+- Supports installed providers when available: Fluent Forms, Forminator, Contact Form 7, Gravity Forms, and WPForms.
+- Stores registrant name, email, phone, registration type, source form, source entry ID, submitted form data, status, approval details, rejection reason, and payment amounts.
+- Registration types supported for pricing are Professional, Academic/Researcher, Student, and Group Booking.
+- Group Booking pricing is calculated from the configured group amount per person multiplied by the detected number of group participants.
+- Workshop Payment Amount is treated as an add-on to the selected registration type amount for subsequent usage.
+- Total Amount to Pay is calculated as registration type amount plus workshop add-on amount when workshop is selected in the submitted form.
+- Admins can approve registrations from the registration detail page.
+- Approval emails notify recipients that their DISI Summit 2026 registration has been approved and include registration number, registration type, registration amount, workshop add-on amount, total amount, Paystack payment button, and fallback Paystack link.
+- Admins can reject registrations from the registration detail page and must provide a rejection reason.
+- Rejection emails include the DISI Summit 2026 branding, registration number, and rejection reason.
+- Registration details hide internal form metadata fields such as Fluent Form embedded post ID, Fluentform nonce, and WordPress HTTP referer.
+- Registrations can be removed automatically when supported source form entries are deleted.
+- Admins can permanently delete any registration from the registration list or detail page.
+- Integration amount fields display thousands separators while remaining usable for pricing calculations.
+- Database schema upgrades run automatically after in-place plugin updates.
+- The dashboard shows total, pending, approved, and rejected registrations.
+- The plugin applies DISI branding colors:
+  Dark Azure #172b3b
+  Dark Turquoise #157664
+  Gray Green #53965c
+  Yellow Green #a5b73c
+  Yellow #ffc801
+- DISI logo assets are bundled in assets/images.
+
+Upload behavior:
+- The plugin package uses a stable internal plugin folder so uploading newer versions replaces the previously installed DISI Summit Portal instead of installing a separate plugin.

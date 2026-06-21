@@ -1,0 +1,16 @@
+body.login {
+    background: #172b3b;
+}
+
+.login h1 a {
+
+    background-image: url(
+    '../images/disi-logo.png'
+    ) !important;
+
+    background-size: contain !important;
+
+    width: 300px !important;
+
+    height: 120px !important;
+}
