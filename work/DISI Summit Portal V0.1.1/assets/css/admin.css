@@ -272,6 +272,26 @@
     margin-top: 14px;
 }
 
+.disi-ticket-table td,
+.disi-ticket-table th {
+    vertical-align: middle;
+}
+
+.disi-ticket-table .button {
+    margin: 2px;
+}
+
+.disi-scan-count {
+    display: inline-block;
+    min-width: 32px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    background: #e8f3f0;
+    color: #105e50;
+    font-weight: 700;
+    text-align: center;
+}
+
 /*
 |--------------------------------------------------------------------------
 | Responsive

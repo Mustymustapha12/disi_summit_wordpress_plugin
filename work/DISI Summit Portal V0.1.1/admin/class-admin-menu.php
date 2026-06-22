@@ -32,7 +32,7 @@ class DISI_Admin_Menu {
     public function register_menu() {
 
         add_menu_page(
-            'DISI Summit Portal V0.3.5',
+            'DISI Summit Portal V0.4.0',
             'DISI Portal',
             'manage_options',
             'disi-dashboard',
@@ -69,6 +69,15 @@ class DISI_Admin_Menu {
         );
 
         add_submenu_page(
+            'disi-dashboard',
+            'E-ticketing',
+            'E-ticketing',
+            'manage_options',
+            'disi-eticketing',
+            [$this, 'eticketing']
+        );
+
+        add_submenu_page(
             null,
             'Registration Details',
             'Registration Details',
@@ -100,5 +109,11 @@ class DISI_Admin_Menu {
 
         include DISI_PLUGIN_DIR .
         'admin/views/integrations.php';
+    }
+
+    public function eticketing() {
+
+        include DISI_PLUGIN_DIR .
+        'admin/views/eticketing.php';
     }
 }

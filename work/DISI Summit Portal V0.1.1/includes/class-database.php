@@ -63,6 +63,16 @@ class DISI_Database {
 
             paid_at DATETIME NULL,
 
+            ticket_token VARCHAR(64) NULL,
+
+            ticket_issued_at DATETIME NULL,
+
+            ticket_email_sent_at DATETIME NULL,
+
+            ticket_scan_count BIGINT UNSIGNED NOT NULL DEFAULT 0,
+
+            ticket_last_scanned_at DATETIME NULL,
+
             submitted_data LONGTEXT NULL,
 
             wp_user_id BIGINT NULL,
@@ -86,6 +96,8 @@ class DISI_Database {
             KEY payment_status_idx (payment_status),
 
             KEY paystack_reference_idx (paystack_reference),
+
+            UNIQUE KEY ticket_token_idx (ticket_token),
 
             KEY registration_type_idx (registration_type)
 
@@ -198,7 +210,27 @@ class DISI_Database {
 
             'paid_at' =>
                 "ALTER TABLE {$table}
-                 ADD paid_at DATETIME NULL"
+                 ADD paid_at DATETIME NULL",
+
+            'ticket_token' =>
+                "ALTER TABLE {$table}
+                 ADD ticket_token VARCHAR(64) NULL",
+
+            'ticket_issued_at' =>
+                "ALTER TABLE {$table}
+                 ADD ticket_issued_at DATETIME NULL",
+
+            'ticket_email_sent_at' =>
+                "ALTER TABLE {$table}
+                 ADD ticket_email_sent_at DATETIME NULL",
+
+            'ticket_scan_count' =>
+                "ALTER TABLE {$table}
+                 ADD ticket_scan_count BIGINT UNSIGNED NOT NULL DEFAULT 0",
+
+            'ticket_last_scanned_at' =>
+                "ALTER TABLE {$table}
+                 ADD ticket_last_scanned_at DATETIME NULL"
         ];
 
         foreach ($required_columns as $column => $query) {
@@ -207,6 +239,18 @@ class DISI_Database {
 
                 $wpdb->query($query);
             }
+        }
+
+        $ticket_index = $wpdb->get_var(
+            "SHOW INDEX FROM {$table}
+             WHERE Key_name = 'ticket_token_idx'"
+        );
+
+        if (!$ticket_index) {
+            $wpdb->query(
+                "ALTER TABLE {$table}
+                 ADD UNIQUE KEY ticket_token_idx (ticket_token)"
+            );
         }
 
         $wpdb->query(

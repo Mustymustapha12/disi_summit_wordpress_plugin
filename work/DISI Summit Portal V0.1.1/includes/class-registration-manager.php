@@ -673,7 +673,23 @@ class DISI_Registration_Manager {
         }
 
         if (($registration->payment_status ?? '') === 'paid') {
-            return $registration;
+            if (
+                class_exists('DISI_Ticketing') &&
+                empty($registration->ticket_token)
+            ) {
+                $ticket_result = DISI_Ticketing::issue_and_send(
+                    $registration->id
+                );
+
+                if (is_wp_error($ticket_result)) {
+                    error_log(
+                        'DISI ticket delivery failed: ' .
+                        $ticket_result->get_error_message()
+                    );
+                }
+            }
+
+            return self::get($registration->id);
         }
 
         $transaction = DISI_Paystack::verify_transaction($reference);
@@ -751,6 +767,21 @@ class DISI_Registration_Manager {
                 'payment_update_failed',
                 'The verified payment could not be saved.'
             );
+        }
+
+        $registration = self::get($registration->id);
+
+        if (class_exists('DISI_Ticketing')) {
+            $ticket_result = DISI_Ticketing::issue_and_send(
+                $registration->id
+            );
+
+            if (is_wp_error($ticket_result)) {
+                error_log(
+                    'DISI ticket delivery failed: ' .
+                    $ticket_result->get_error_message()
+                );
+            }
         }
 
         return self::get($registration->id);

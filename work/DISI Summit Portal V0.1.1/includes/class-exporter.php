@@ -89,6 +89,12 @@ class DISI_Exporter {
                 'Paystack Transaction ID',
                 'Payment Mode',
                 'Payment Link',
+                'Ticket Number',
+                'E-ticket URL',
+                'Ticket Issued At',
+                'Ticket Email Sent At',
+                'Ticket Scan Count',
+                'Ticket Last Scanned At',
                 'Rejection Reason',
                 'Approved By',
                 'Approved At',
@@ -131,6 +137,16 @@ class DISI_Exporter {
                 $row->paystack_transaction_id,
                 $row->paystack_mode,
                 $row->paystack_authorization_url,
+                !empty($row->ticket_token)
+                    ? DISI_Ticketing::ticket_number($row)
+                    : '',
+                !empty($row->ticket_token)
+                    ? DISI_Ticketing::ticket_url($row)
+                    : '',
+                $row->ticket_issued_at ?? '',
+                $row->ticket_email_sent_at ?? '',
+                intval($row->ticket_scan_count ?? 0),
+                $row->ticket_last_scanned_at ?? '',
                 $row->rejection_reason,
                 $row->approved_by,
                 $row->approved_at,
@@ -489,6 +505,18 @@ class DISI_Registrations_PDF extends FPDF {
 
         if (!empty($row->paid_at)) {
             $details[] = 'Paid: ' . $row->paid_at;
+        }
+
+        if (!empty($row->ticket_token)) {
+            $details[] = 'Ticket: ' .
+                DISI_Ticketing::ticket_number($row);
+            $details[] = 'Ticket scans: ' .
+                intval($row->ticket_scan_count ?? 0);
+
+            if (!empty($row->ticket_last_scanned_at)) {
+                $details[] = 'Last ticket scan: ' .
+                    $row->ticket_last_scanned_at;
+            }
         }
 
         foreach ($submitted as $key => $value) {

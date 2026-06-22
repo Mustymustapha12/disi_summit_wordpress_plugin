@@ -1,5 +1,5 @@
 DISI Summit Portal
-Version: 0.3.5
+Version: 0.4.0
 
 This plugin manages DISI Summit 2026 registrations inside WordPress.
 
@@ -53,6 +53,15 @@ Main features:
 - The dashboard includes an Approved but Unpaid registration card and renames Pending Registrations to Pending Approvals.
 - Dashboard amount cards use responsive sizing and overflow protection for multi-million-naira values.
 - Forminator single and bulk entry deletion hooks remove the matching portal registrations.
+- Approved registrations with verified paid status receive a secure E-ticket automatically by email.
+- E-ticket emails include a branded PDF attachment, a secure electronic-ticket link, participant details, and a Code 128 barcode.
+- The barcode directs event staff to the participant's secure electronic ticket.
+- The E-ticketing admin menu lists all approved and paid participants with ticket issue time, email delivery time, scan count, and latest scan time.
+- Admins can issue missing tickets, resend ticket emails, and preview electronic tickets without increasing the scan count.
+- Opening a valid participant ticket records the scan count and latest scan time for admin tracking.
+- Ticket URLs use random private tokens and invalid or ineligible tickets return a not-found page.
+- CSV exports include ticket number, electronic-ticket URL, issue and email times, scan count, and latest scan time.
+- PDF registration exports include ticket number and scan history when a ticket has been issued.
 - CSV values are protected against spreadsheet formula execution.
 - PDF generation is bundled through FPDF 1.86 and does not require a server PDF extension.
 - The plugin applies DISI branding colors:
