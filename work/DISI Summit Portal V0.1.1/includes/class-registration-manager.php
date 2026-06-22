@@ -443,12 +443,37 @@ class DISI_Registration_Manager {
 
         return $wpdb->get_row(
             "SELECT
-                COALESCE(SUM(registration_amount), 0)
+                COALESCE(SUM(
+                    CASE
+                        WHEN status != 'rejected'
+                        THEN registration_amount
+                        ELSE 0
+                    END
+                ), 0)
                     AS registration_amount,
-                COALESCE(SUM(workshop_amount), 0)
+                COALESCE(SUM(
+                    CASE
+                        WHEN status != 'rejected'
+                        THEN workshop_amount
+                        ELSE 0
+                    END
+                ), 0)
                     AS workshop_amount,
-                COALESCE(SUM(total_amount), 0)
+                COALESCE(SUM(
+                    CASE
+                        WHEN status != 'rejected'
+                        THEN total_amount
+                        ELSE 0
+                    END
+                ), 0)
                     AS total_amount,
+                COALESCE(SUM(
+                    CASE
+                        WHEN status = 'rejected'
+                        THEN total_amount
+                        ELSE 0
+                    END
+                ), 0) AS rejected_amount,
                 COALESCE(SUM(
                     CASE
                         WHEN payment_status = 'paid'
@@ -960,6 +985,25 @@ class DISI_Registration_Manager {
 
         return $labels[$type] ??
             ucwords(str_replace('_', ' ', (string) $type));
+    }
+
+    public static function label_submission_field($key) {
+
+        $key = preg_replace(
+            '/(?:-|_)\d+$/',
+            '',
+            (string) $key
+        );
+
+        return ucwords(
+            trim(
+                preg_replace(
+                    '/[\s_-]+/',
+                    ' ',
+                    $key
+                )
+            )
+        );
     }
 
     public static function is_hidden_submission_field($key) {

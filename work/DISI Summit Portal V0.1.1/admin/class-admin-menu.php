@@ -32,7 +32,7 @@ class DISI_Admin_Menu {
     public function register_menu() {
 
         add_menu_page(
-            'DISI Summit Portal V0.3.3',
+            'DISI Summit Portal V0.3.4',
             'DISI Portal',
             'manage_options',
             'disi-dashboard',

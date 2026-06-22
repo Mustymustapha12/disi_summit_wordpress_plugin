@@ -273,8 +273,8 @@ class DISI_Exporter {
 
     public static function field_label($key) {
 
-        return ucwords(
-            str_replace(['_', '-'], ' ', (string) $key)
+        return DISI_Registration_Manager::label_submission_field(
+            $key
         );
     }
 

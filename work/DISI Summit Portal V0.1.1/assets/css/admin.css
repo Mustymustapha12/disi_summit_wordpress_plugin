@@ -99,7 +99,8 @@
 }
 
 .disi-dashboard-card .disi-dashboard-amount {
-    font-size: 25px;
+    font-size: 20px;
+    line-height: 1.25;
     overflow-wrap: anywhere;
 }
 

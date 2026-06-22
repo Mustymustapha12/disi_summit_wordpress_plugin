@@ -150,6 +150,7 @@ class DISI_Form_Listener {
     ) {
 
         $data = [];
+        $labels = $this->forminator_field_labels($form_id);
 
         if (is_array($field_data)) {
 
@@ -169,9 +170,28 @@ class DISI_Form_Listener {
                     continue;
                 }
 
-                $data[$key] =
-                $field['value']
-                ?? '';
+                $label = $labels[$key] ??
+                    DISI_Registration_Manager::label_submission_field($key);
+
+                if (array_key_exists($label, $data)) {
+                    $label .= ' (' . $key . ')';
+                }
+
+                $value = $field['value'] ?? '';
+
+                if (
+                    is_array($value) &&
+                    stripos($key, 'name') !== false
+                ) {
+                    $value = implode(
+                        ' ',
+                        array_filter(
+                            array_map('sanitize_text_field', $value)
+                        )
+                    );
+                }
+
+                $data[$label] = $value;
             }
         }
 
@@ -593,5 +613,48 @@ class DISI_Form_Listener {
         }
 
         return 0;
+    }
+
+    private function forminator_field_labels($form_id) {
+
+        if (!class_exists('Forminator_API')) {
+            return [];
+        }
+
+        $form = Forminator_API::get_form($form_id);
+
+        if (is_wp_error($form) || !is_object($form)) {
+            return [];
+        }
+
+        $labels = [];
+
+        foreach ((array) $form->get_fields() as $field) {
+            if (!is_object($field)) {
+                continue;
+            }
+
+            $formatted = method_exists($field, 'to_formatted_array')
+                ? $field->to_formatted_array()
+                : [];
+            $field_id = $formatted['element_id'] ??
+                ($field->slug ?? '');
+
+            if (empty($field_id)) {
+                continue;
+            }
+
+            $label = method_exists($field, 'get_label_for_entry')
+                ? $field->get_label_for_entry()
+                : '';
+
+            $labels[$field_id] = !empty($label)
+                ? sanitize_text_field($label)
+                : DISI_Registration_Manager::label_submission_field(
+                    $field_id
+                );
+        }
+
+        return $labels;
     }
 }

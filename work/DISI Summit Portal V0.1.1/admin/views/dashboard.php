@@ -39,7 +39,7 @@ DISI_Registration_Manager::amount_totals();
 
 <div class="wrap">
 
-<h1>DISI Summit Portal V0.3.3</h1>
+<h1>DISI Summit Portal V0.3.4</h1>
 
 <div class="disi-dashboard-grid">
 
@@ -105,14 +105,14 @@ DISI_Registration_Manager::amount_totals();
 
     <div class="disi-dashboard-card disi-dashboard-card-primary">
 
-        <h3>Registration Fees</h3>
+        <h3>Active Registration Fees</h3>
 
         <div class="count disi-dashboard-amount">
 
             &#8358;<?php echo esc_html(
                 number_format(
                     floatval($amounts->registration_amount ?? 0),
-                    2
+                    1
                 )
             ); ?>
 
@@ -122,14 +122,14 @@ DISI_Registration_Manager::amount_totals();
 
     <div class="disi-dashboard-card disi-dashboard-card-pending">
 
-        <h3>Workshop Add-ons</h3>
+        <h3>Active Workshop Add-ons</h3>
 
         <div class="count disi-dashboard-amount">
 
             &#8358;<?php echo esc_html(
                 number_format(
                     floatval($amounts->workshop_amount ?? 0),
-                    2
+                    1
                 )
             ); ?>
 
@@ -139,14 +139,14 @@ DISI_Registration_Manager::amount_totals();
 
     <div class="disi-dashboard-card disi-dashboard-card-primary">
 
-        <h3>Total Expected Amount</h3>
+        <h3>Active Expected Amount</h3>
 
         <div class="count disi-dashboard-amount">
 
             &#8358;<?php echo esc_html(
                 number_format(
                     floatval($amounts->total_amount ?? 0),
-                    2
+                    1
                 )
             ); ?>
 
@@ -163,7 +163,24 @@ DISI_Registration_Manager::amount_totals();
             &#8358;<?php echo esc_html(
                 number_format(
                     floatval($amounts->paid_amount ?? 0),
-                    2
+                    1
+                )
+            ); ?>
+
+        </div>
+
+    </div>
+
+    <div class="disi-dashboard-card disi-dashboard-card-rejected">
+
+        <h3>Rejected Registration Amount</h3>
+
+        <div class="count disi-dashboard-amount">
+
+            &#8358;<?php echo esc_html(
+                number_format(
+                    floatval($amounts->rejected_amount ?? 0),
+                    1
                 )
             ); ?>
 

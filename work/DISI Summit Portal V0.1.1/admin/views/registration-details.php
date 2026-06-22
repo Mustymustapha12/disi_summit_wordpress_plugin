@@ -357,13 +357,7 @@ $value = implode(', ', $value);
 
 echo esc_html(
 
-ucwords(
-str_replace(
-'_',
-' ',
-$key
-)
-)
+DISI_Registration_Manager::label_submission_field($key)
 
 );
 
