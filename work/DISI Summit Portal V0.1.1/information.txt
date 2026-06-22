@@ -57,6 +57,9 @@ Main features:
 - E-ticket emails include a branded PDF attachment, a secure electronic-ticket link, participant details, and a QR code.
 - The QR code directs event staff to the participant's secure electronic ticket.
 - Printable PDF tickets use a medium landscape boarding-pass layout with a participant section, perforated divider, and QR verification stub.
+- The E-ticketing page can be filtered by registration type, ticket issuance, scan status, and participant search.
+- E-ticketing lists support 10, 25, or 50 participants per page with pagination and matching record totals.
+- Filtered E-ticketing records can be exported as CSV or a branded landscape PDF report.
 - The E-ticketing admin menu lists all approved and paid participants with ticket issue time, email delivery time, scan count, and latest scan time.
 - Admins can issue missing tickets, resend ticket emails, and preview electronic tickets without increasing the scan count.
 - Opening a valid participant ticket records the scan count and latest scan time for admin tracking.

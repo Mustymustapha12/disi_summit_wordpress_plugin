@@ -281,6 +281,50 @@
     margin: 2px;
 }
 
+.disi-ticket-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin: 16px 0 0;
+}
+
+.disi-ticket-filters select,
+.disi-ticket-filters input[type="search"] {
+    max-width: 220px;
+}
+
+.disi-ticket-toolbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+    margin: 14px 0;
+}
+
+.disi-ticket-toolbar .disi-export-actions {
+    margin-top: 0;
+}
+
+.disi-ticket-total {
+    color: #50575e;
+    font-weight: 600;
+}
+
+.disi-ticket-table {
+    min-width: 1120px;
+}
+
+.disi-ticket-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.disi-ticket-table-wrap + .tablenav .tablenav-pages {
+    float: none;
+    margin: 12px 0 0;
+}
+
 .disi-scan-count {
     display: inline-block;
     min-width: 32px;
@@ -299,6 +343,17 @@
 */
 
 @media (max-width: 768px) {
+
+    .disi-ticket-filters select,
+    .disi-ticket-filters input[type="search"] {
+        width: 100%;
+        max-width: none;
+    }
+
+    .disi-ticket-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
 
     .disi-data-grid {
         grid-template-columns: 1fr;

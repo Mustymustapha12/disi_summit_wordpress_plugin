@@ -25,6 +25,11 @@ class DISI_Ticketing {
             'admin_post_disi_send_ticket',
             [$this, 'handle_admin_send']
         );
+
+        add_action(
+            'admin_post_disi_export_tickets',
+            [$this, 'handle_export']
+        );
     }
 
     public static function issue_and_send($registration_id) {
@@ -49,13 +54,124 @@ class DISI_Ticketing {
         return self::send_email($registration);
     }
 
-    public static function get_eligible($search = '') {
+    public static function get_eligible(
+        $search = '',
+        $type = '',
+        $ticket_status = '',
+        $scan_status = ''
+    ) {
 
         global $wpdb;
 
         $table = DISI_Database::get_table();
+        $where = self::eligible_where(
+            $search,
+            $type,
+            $ticket_status,
+            $scan_status
+        );
+
+        return $wpdb->get_results(
+            "SELECT *
+             FROM {$table}
+             {$where}
+             ORDER BY paid_at DESC, id DESC"
+        );
+    }
+
+    public static function get_eligible_paginated(
+        $page,
+        $per_page,
+        $search = '',
+        $type = '',
+        $ticket_status = '',
+        $scan_status = ''
+    ) {
+
+        global $wpdb;
+
+        $table = DISI_Database::get_table();
+        $where = self::eligible_where(
+            $search,
+            $type,
+            $ticket_status,
+            $scan_status
+        );
+        $offset = (max(1, intval($page)) - 1) * intval($per_page);
+
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT *
+                 FROM {$table}
+                 {$where}
+                 ORDER BY paid_at DESC, id DESC
+                 LIMIT %d OFFSET %d",
+                intval($per_page),
+                $offset
+            )
+        );
+    }
+
+    public static function eligible_count(
+        $search = '',
+        $type = '',
+        $ticket_status = '',
+        $scan_status = ''
+    ) {
+
+        global $wpdb;
+
+        $table = DISI_Database::get_table();
+        $where = self::eligible_where(
+            $search,
+            $type,
+            $ticket_status,
+            $scan_status
+        );
+
+        return intval(
+            $wpdb->get_var(
+                "SELECT COUNT(*)
+                 FROM {$table}
+                 {$where}"
+            )
+        );
+    }
+
+    private static function eligible_where(
+        $search,
+        $type,
+        $ticket_status,
+        $scan_status
+    ) {
+
+        global $wpdb;
+
         $where = "WHERE status = 'approved'
                   AND payment_status = 'paid'";
+
+        if (!empty($type)) {
+            $where .= $wpdb->prepare(
+                ' AND registration_type = %s',
+                $type
+            );
+        }
+
+        if ($ticket_status === 'issued') {
+            $where .= " AND ticket_token IS NOT NULL
+                        AND ticket_token != ''";
+        } elseif ($ticket_status === 'not_issued') {
+            $where .= " AND (
+                ticket_token IS NULL
+                OR ticket_token = ''
+            )";
+        }
+
+        if ($scan_status === 'scanned') {
+            $where .= ' AND ticket_scan_count > 0';
+        } elseif ($scan_status === 'not_scanned') {
+            $where .= ' AND ticket_scan_count = 0';
+        }
 
         if (!empty($search)) {
             $term = '%' . $wpdb->esc_like($search) . '%';
@@ -64,8 +180,10 @@ class DISI_Ticketing {
                     email LIKE %s
                     OR first_name LIKE %s
                     OR last_name LIKE %s
+                    OR business_name LIKE %s
                     OR phone LIKE %s
                 )",
+                $term,
                 $term,
                 $term,
                 $term,
@@ -73,12 +191,7 @@ class DISI_Ticketing {
             );
         }
 
-        return $wpdb->get_results(
-            "SELECT *
-             FROM {$table}
-             {$where}
-             ORDER BY paid_at DESC, id DESC"
-        );
+        return $where;
     }
 
     public static function ticket_url($registration, $admin_preview = false) {
@@ -138,6 +251,186 @@ class DISI_Ticketing {
             )
         );
         exit;
+    }
+
+    public function handle_export() {
+
+        if (!current_user_can('manage_options')) {
+            wp_die('You are not allowed to export E-tickets.');
+        }
+
+        check_admin_referer('disi_export_tickets');
+
+        $format = sanitize_text_field($_GET['format'] ?? 'csv');
+        $filters = [
+            'search' => sanitize_text_field($_GET['s'] ?? ''),
+            'type' => sanitize_text_field($_GET['type'] ?? ''),
+            'ticket_status' => sanitize_text_field(
+                $_GET['ticket_status'] ?? ''
+            ),
+            'scan_status' => sanitize_text_field(
+                $_GET['scan_status'] ?? ''
+            )
+        ];
+        $rows = self::get_eligible(
+            $filters['search'],
+            $filters['type'],
+            $filters['ticket_status'],
+            $filters['scan_status']
+        );
+
+        if ($format === 'pdf') {
+            self::export_pdf($rows, $filters);
+        }
+
+        self::export_csv($rows);
+    }
+
+    private static function export_csv($rows) {
+
+        $filename = 'disi-etickets-' . gmdate('Y-m-d-His') . '.csv';
+
+        nocache_headers();
+        header('Content-Type: text/csv; charset=UTF-8');
+        header(
+            'Content-Disposition: attachment; filename="' .
+            $filename . '"'
+        );
+
+        $output = fopen('php://output', 'w');
+        fwrite($output, "\xEF\xBB\xBF");
+        fputcsv(
+            $output,
+            [
+                'Ticket Number',
+                'Registration Number',
+                'Participant',
+                'Business Name',
+                'Email',
+                'Phone',
+                'Registration Type',
+                'Amount Paid',
+                'Paid At',
+                'Ticket Status',
+                'E-ticket URL',
+                'Ticket Issued At',
+                'Ticket Email Sent At',
+                'Scan Count',
+                'Last Scanned At'
+            ]
+        );
+
+        foreach ($rows as $row) {
+            $name = trim(
+                ($row->first_name ?? '') . ' ' .
+                ($row->last_name ?? '')
+            );
+            $issued = !empty($row->ticket_token);
+            $values = [
+                $issued ? self::ticket_number($row) : '',
+                DISI_Registration_Manager::get_registration_number($row),
+                $name ?: $row->email,
+                $row->business_name ?? '',
+                $row->email,
+                $row->phone,
+                DISI_Registration_Manager::label_registration_type(
+                    $row->registration_type
+                ),
+                number_format(
+                    floatval($row->total_amount ?? 0),
+                    2,
+                    '.',
+                    ''
+                ),
+                $row->paid_at ?? '',
+                $issued ? 'Issued' : 'Not Issued',
+                $issued ? self::ticket_url($row) : '',
+                $row->ticket_issued_at ?? '',
+                $row->ticket_email_sent_at ?? '',
+                intval($row->ticket_scan_count ?? 0),
+                $row->ticket_last_scanned_at ?? ''
+            ];
+
+            fputcsv(
+                $output,
+                array_map([__CLASS__, 'csv_value'], $values)
+            );
+        }
+
+        fclose($output);
+        exit;
+    }
+
+    private static function csv_value($value) {
+
+        $value = (string) $value;
+
+        if (preg_match('/^[=\-+@]/', $value)) {
+            return "'" . $value;
+        }
+
+        return $value;
+    }
+
+    private static function export_pdf($rows, $filters) {
+
+        $pdf = new DISI_Tickets_Report_PDF(
+            DISI_PLUGIN_DIR . 'assets/images/disi-logo.png'
+        );
+        $pdf->SetTitle('DISI Summit E-ticketing Report');
+        $pdf->SetAuthor('DISI Summit Portal');
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(true, 14);
+        $pdf->AddPage();
+        $pdf->report_summary(
+            current_time('mysql'),
+            self::ticket_filter_summary($filters),
+            count($rows)
+        );
+        $pdf->start_table();
+
+        foreach ($rows as $index => $row) {
+            $pdf->ticket_row($index + 1, $row);
+        }
+
+        $pdf->finish_table(empty($rows));
+        $pdf->Output(
+            'D',
+            'disi-etickets-' . gmdate('Y-m-d-His') . '.pdf'
+        );
+        exit;
+    }
+
+    private static function ticket_filter_summary($filters) {
+
+        $labels = [];
+
+        if (!empty($filters['type'])) {
+            $labels[] = 'Type: ' .
+                DISI_Registration_Manager::label_registration_type(
+                    $filters['type']
+                );
+        }
+
+        if (!empty($filters['ticket_status'])) {
+            $labels[] = 'Ticket: ' . ucwords(
+                str_replace('_', ' ', $filters['ticket_status'])
+            );
+        }
+
+        if (!empty($filters['scan_status'])) {
+            $labels[] = 'Scan: ' . ucwords(
+                str_replace('_', ' ', $filters['scan_status'])
+            );
+        }
+
+        if (!empty($filters['search'])) {
+            $labels[] = 'Search: ' . $filters['search'];
+        }
+
+        return empty($labels)
+            ? 'All approved and paid participants'
+            : implode('; ', $labels);
     }
 
     public function handle_public_ticket() {
@@ -728,5 +1021,273 @@ class DISI_Ticket_PDF extends FPDF {
             $size -= 0.5;
             $this->SetFont('Helvetica', $style, $size);
         }
+    }
+}
+
+class DISI_Tickets_Report_PDF extends FPDF {
+
+    private $logo_path;
+    private $table_started = false;
+    private $row_index = 0;
+    private $widths = [7, 24, 24, 40, 52, 27, 30, 29, 10, 34];
+    private $headers = [
+        '#',
+        'Ticket',
+        'Registration',
+        'Participant',
+        'Email',
+        'Phone',
+        'Type',
+        'Issued',
+        'Scans',
+        'Last Scan'
+    ];
+
+    public function __construct($logo_path) {
+
+        parent::__construct('L', 'mm', 'A4');
+        $this->logo_path = $logo_path;
+    }
+
+    public function Header() {
+
+        $this->SetFillColor(23, 43, 59);
+        $this->Rect(0, 0, 297, 25, 'F');
+
+        if (is_readable($this->logo_path)) {
+            $this->Image($this->logo_path, 3, -5, 50, 35);
+        }
+
+        $this->SetXY(47, 6);
+        $this->SetTextColor(255, 255, 255);
+        $this->SetFont('Helvetica', 'B', 15);
+        $this->Cell(0, 7, 'DISI Summit 2026 E-ticketing Report', 0, 1);
+        $this->SetX(47);
+        $this->SetFont('Helvetica', '', 8);
+        $this->SetTextColor(222, 231, 235);
+        $this->Cell(
+            0,
+            5,
+            'Approved and verified paid participant tickets',
+            0,
+            1
+        );
+        $this->SetY(29);
+
+        if ($this->table_started) {
+            $this->table_header();
+        }
+    }
+
+    public function Footer() {
+
+        $this->SetY(-12);
+        $this->SetFont('Helvetica', '', 8);
+        $this->SetTextColor(100, 100, 100);
+        $this->Cell(
+            0,
+            6,
+            'DISI Summit Portal | E-ticketing | Page ' . $this->PageNo(),
+            0,
+            0,
+            'C'
+        );
+    }
+
+    public function report_summary($exported_at, $filters, $record_count) {
+
+        $this->SetFillColor(243, 247, 246);
+        $this->SetDrawColor(205, 219, 215);
+        $this->SetTextColor(23, 43, 59);
+        $this->SetFont('Helvetica', '', 8);
+        $this->MultiCell(
+            0,
+            5,
+            DISI_Exporter::pdf_text(
+                'Exported: ' . $exported_at .
+                '    |    Records: ' . number_format($record_count) .
+                '    |    Filters: ' . $filters
+            ),
+            1,
+            'L',
+            true
+        );
+        $this->Ln(3);
+    }
+
+    public function start_table() {
+
+        $this->table_started = true;
+        $this->table_header();
+    }
+
+    public function finish_table($empty) {
+
+        if (!$empty) {
+            return;
+        }
+
+        $this->SetFont('Helvetica', '', 9);
+        $this->SetTextColor(80, 80, 80);
+        $this->Cell(
+            0,
+            10,
+            'No E-tickets matched the selected filters.',
+            1,
+            1,
+            'C'
+        );
+    }
+
+    public function ticket_row($number, $row) {
+
+        $name = trim(
+            ($row->first_name ?? '') . ' ' .
+            ($row->last_name ?? '')
+        );
+        $issued = !empty($row->ticket_token);
+
+        $this->table_row([
+            $number,
+            $issued ? DISI_Ticketing::ticket_number($row) : 'Not issued',
+            DISI_Registration_Manager::get_registration_number($row),
+            $name ?: $row->email,
+            $row->email,
+            $row->phone,
+            DISI_Registration_Manager::label_registration_type(
+                $row->registration_type
+            ),
+            $row->ticket_issued_at ?: '-',
+            intval($row->ticket_scan_count ?? 0),
+            $row->ticket_last_scanned_at ?: 'Not scanned'
+        ]);
+    }
+
+    private function table_header() {
+
+        $this->SetFillColor(21, 118, 100);
+        $this->SetDrawColor(255, 255, 255);
+        $this->SetTextColor(255, 255, 255);
+        $this->SetFont('Helvetica', 'B', 6.5);
+
+        foreach ($this->headers as $index => $header) {
+            $this->Cell(
+                $this->widths[$index],
+                8,
+                $header,
+                1,
+                0,
+                'C',
+                true
+            );
+        }
+
+        $this->Ln();
+    }
+
+    private function table_row($data) {
+
+        $this->SetFont('Helvetica', '', 6.5);
+        $line_counts = [];
+
+        foreach ($data as $index => $value) {
+            $line_counts[] = $this->line_count(
+                $this->widths[$index],
+                DISI_Exporter::pdf_text($value)
+            );
+        }
+
+        $height = max(8, max($line_counts) * 3.4 + 2);
+
+        if ($this->GetY() + $height > $this->PageBreakTrigger) {
+            $this->AddPage();
+        }
+
+        $fill = $this->row_index % 2 === 0;
+        $this->SetFillColor(246, 249, 248);
+        $this->SetDrawColor(207, 218, 215);
+        $this->SetTextColor(35, 45, 48);
+
+        foreach ($data as $index => $value) {
+            $width = $this->widths[$index];
+            $x = $this->GetX();
+            $y = $this->GetY();
+            $this->Rect(
+                $x,
+                $y,
+                $width,
+                $height,
+                $fill ? 'DF' : 'D'
+            );
+            $this->SetXY($x + 1, $y + 1);
+            $this->MultiCell(
+                $width - 2,
+                3.4,
+                DISI_Exporter::pdf_text($value),
+                0,
+                in_array($index, [0, 8], true) ? 'C' : 'L',
+                false
+            );
+            $this->SetXY($x + $width, $y);
+        }
+
+        $this->SetY($this->GetY() + $height);
+        $this->row_index++;
+    }
+
+    private function line_count($width, $text) {
+
+        $cw = &$this->CurrentFont['cw'];
+        $max_width = ($width - 2) * 1000 / $this->FontSize;
+        $text = str_replace("\r", '', $text);
+        $length = strlen($text);
+
+        if ($length > 0 && $text[$length - 1] === "\n") {
+            $length--;
+        }
+
+        $separator = -1;
+        $index = 0;
+        $line_start = 0;
+        $line_width = 0;
+        $lines = 1;
+
+        while ($index < $length) {
+            $character = $text[$index];
+
+            if ($character === "\n") {
+                $index++;
+                $separator = -1;
+                $line_start = $index;
+                $line_width = 0;
+                $lines++;
+                continue;
+            }
+
+            if ($character === ' ') {
+                $separator = $index;
+            }
+
+            $line_width += $cw[$character] ?? 0;
+
+            if ($line_width > $max_width) {
+                if ($separator === -1 || $separator < $line_start) {
+                    if ($index === $line_start) {
+                        $index++;
+                    }
+                } else {
+                    $index = $separator + 1;
+                }
+
+                $separator = -1;
+                $line_start = $index;
+                $line_width = 0;
+                $lines++;
+            } else {
+                $index++;
+            }
+        }
+
+        return $lines;
     }
 }
