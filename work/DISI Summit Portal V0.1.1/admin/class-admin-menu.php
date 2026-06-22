@@ -31,15 +31,35 @@ class DISI_Admin_Menu {
 
     public function register_menu() {
 
+        $licensed = (
+            class_exists('DISI_License') &&
+            DISI_License::is_active()
+        );
+
         add_menu_page(
-            'DISI Summit Portal V0.4.0',
+            $licensed
+                ? 'DISI Summit Portal V0.5.0'
+                : 'DISI Portal Approval Required',
             'DISI Portal',
             'manage_options',
             'disi-dashboard',
-            [$this, 'dashboard'],
+            $licensed ? [$this, 'dashboard'] : [$this, 'license'],
             'dashicons-groups',
             25
         );
+
+        if (!$licensed) {
+            add_submenu_page(
+                'disi-dashboard',
+                'License',
+                'License',
+                'manage_options',
+                'disi-dashboard',
+                [$this, 'license']
+            );
+
+            return;
+        }
 
         add_submenu_page(
             'disi-dashboard',
@@ -78,6 +98,15 @@ class DISI_Admin_Menu {
         );
 
         add_submenu_page(
+            'disi-dashboard',
+            'License',
+            'License',
+            'manage_options',
+            'disi-license',
+            [$this, 'license']
+        );
+
+        add_submenu_page(
             null,
             'Registration Details',
             'Registration Details',
@@ -89,11 +118,21 @@ class DISI_Admin_Menu {
 
     public function registration_view() {
 
+        if (!$this->licensed()) {
+            $this->license();
+            return;
+        }
+
         include DISI_PLUGIN_DIR .
         'admin/views/registration-details.php';
     }
 
     public function dashboard() {
+
+        if (!$this->licensed()) {
+            $this->license();
+            return;
+        }
 
         include DISI_PLUGIN_DIR .
         'admin/views/dashboard.php';
@@ -101,11 +140,21 @@ class DISI_Admin_Menu {
 
     public function registrations() {
 
+        if (!$this->licensed()) {
+            $this->license();
+            return;
+        }
+
         include DISI_PLUGIN_DIR .
         'admin/views/registrations.php';
     }
 
     public function integrations() {
+
+        if (!$this->licensed()) {
+            $this->license();
+            return;
+        }
 
         include DISI_PLUGIN_DIR .
         'admin/views/integrations.php';
@@ -113,7 +162,25 @@ class DISI_Admin_Menu {
 
     public function eticketing() {
 
+        if (!$this->licensed()) {
+            $this->license();
+            return;
+        }
+
         include DISI_PLUGIN_DIR .
         'admin/views/eticketing.php';
+    }
+
+    public function license() {
+
+        include DISI_PLUGIN_DIR . 'admin/views/license.php';
+    }
+
+    private function licensed() {
+
+        return (
+            class_exists('DISI_License') &&
+            DISI_License::is_active()
+        );
     }
 }

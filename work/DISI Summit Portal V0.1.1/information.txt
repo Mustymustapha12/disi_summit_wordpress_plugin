@@ -1,5 +1,5 @@
 DISI Summit Portal
-Version: 0.4.0
+Version: 0.5.0
 
 This plugin manages DISI Summit 2026 registrations inside WordPress.
 
@@ -60,6 +60,17 @@ Main features:
 - The E-ticketing page can be filtered by registration type, ticket issuance, scan status, and participant search.
 - E-ticketing lists support 10, 25, or 50 participants per page with pagination and matching record totals.
 - Filtered E-ticketing records can be exported as CSV or a branded landscape PDF report.
+- Each WordPress installation now requires a site-specific owner approval key before portal operations are enabled.
+- License approval is tied to the normalized WordPress site URL and a unique local installation ID.
+- License verification is performed locally with a signed key and does not rely on a subscription server, recurring network request, or expiration date.
+- Unapproved installations retain access only to the License page while registration capture, Paystack, exports, E-ticketing, and public ticket endpoints remain inactive.
+- The private license signing key and owner approval tool are not included in the installable plugin ZIP.
+
+Owner approval workflow:
+1. The site administrator opens DISI Portal > License and sends the displayed request code to the plugin owner.
+2. The plugin owner runs: php owner-tools/generate-license.php 'DISI-REQ-...'
+3. The generated DISI-LIC activation key is pasted into the site's License page.
+4. Once approved, normal plugin behavior continues without remote license checks or expiry interruptions.
 - The E-ticketing admin menu lists all approved and paid participants with ticket issue time, email delivery time, scan count, and latest scan time.
 - Admins can issue missing tickets, resend ticket emails, and preview electronic tickets without increasing the scan count.
 - Opening a valid participant ticket records the scan count and latest scan time for admin tracking.

@@ -336,6 +336,38 @@
     text-align: center;
 }
 
+.disi-license-page {
+    max-width: 900px;
+}
+
+.disi-license-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    align-items: center;
+    margin: 18px 0;
+    padding: 16px 18px;
+    border-left: 5px solid #b32d2e;
+    background: #fff;
+}
+
+.disi-license-status.is-active {
+    border-left-color: #157664;
+}
+
+.disi-license-status strong {
+    color: #172b3b;
+    font-size: 15px;
+}
+
+.disi-license-status.is-active strong {
+    color: #157664;
+}
+
+.disi-license-page textarea.code {
+    word-break: break-all;
+}
+
 /*
 |--------------------------------------------------------------------------
 | Responsive
