@@ -514,9 +514,9 @@ class DISI_Ticket_PDF extends FPDF {
 
     public function __construct($logo_path) {
 
-        parent::__construct('P', 'mm', 'A4');
+        parent::__construct('L', 'mm', [100, 240]);
         $this->logo_path = $logo_path;
-        $this->SetMargins(14, 14, 14);
+        $this->SetMargins(0, 0, 0);
         $this->SetAutoPageBreak(false);
     }
 
@@ -526,93 +526,207 @@ class DISI_Ticket_PDF extends FPDF {
             ($registration->first_name ?? '') . ' ' .
             ($registration->last_name ?? '')
         );
-
-        $this->SetFillColor(23, 43, 59);
-        $this->Rect(0, 0, 210, 48, 'F');
-
-        if (is_readable($this->logo_path)) {
-            $this->Image($this->logo_path, 12, -3, 57, 40);
-        }
-
-        $this->SetXY(72, 12);
-        $this->SetTextColor(255, 255, 255);
-        $this->SetFont('Helvetica', 'B', 19);
-        $this->Cell(0, 9, 'DISI SUMMIT 2026', 0, 1);
-        $this->SetX(72);
-        $this->SetFont('Helvetica', '', 10);
-        $this->Cell(0, 6, 'Official E-ticket', 0, 1);
-
-        $this->SetXY(14, 59);
-        $this->SetFillColor(220, 252, 231);
-        $this->SetTextColor(22, 101, 52);
-        $this->SetFont('Helvetica', 'B', 11);
-        $this->Cell(42, 9, 'VALID - PAID', 0, 1, 'C', true);
-
-        $this->Ln(8);
-        $this->field('Ticket Number', DISI_Ticketing::ticket_number($registration));
-        $this->field(
-            'Registration Number',
-            DISI_Registration_Manager::get_registration_number($registration)
-        );
-        $this->field('Participant', $name ?: $registration->email);
-        $this->field('Email', $registration->email);
-        $this->field('Phone', $registration->phone);
-        $this->field(
-            'Registration Type',
+        $name = $name ?: $registration->email;
+        $registration_number =
+            DISI_Registration_Manager::get_registration_number(
+                $registration
+            );
+        $registration_type =
             DISI_Registration_Manager::label_registration_type(
                 $registration->registration_type
-            )
-        );
-        $this->field('Issued At', $registration->ticket_issued_at);
+            );
+        $ticket_number = DISI_Ticketing::ticket_number($registration);
 
-        $this->SetY(184);
-        $this->SetDrawColor(219, 229, 226);
-        $this->Rect(14, 180, 182, 86, 'D');
+        $this->SetFillColor(244, 248, 247);
+        $this->Rect(0, 0, 240, 100, 'F');
+
+        $this->SetFillColor(23, 43, 59);
+        $this->Rect(0, 0, 240, 22, 'F');
+
+        $this->SetFillColor(255, 200, 1);
+        $this->Rect(0, 22, 240, 2.5, 'F');
+
+        if (is_readable($this->logo_path)) {
+            $this->Image($this->logo_path, 7, 1.5, 34, 20);
+        }
+
+        $this->SetXY(47, 4.5);
+        $this->SetTextColor(255, 255, 255);
+        $this->SetFont('Helvetica', 'B', 15);
+        $this->Cell(104, 7, 'DISI SUMMIT 2026', 0, 1);
+        $this->SetX(47);
+        $this->SetFont('Helvetica', '', 7.5);
+        $this->SetTextColor(213, 224, 221);
+        $this->Cell(104, 5, 'OFFICIAL ADMISSION TICKET', 0, 1);
+
+        $this->SetXY(172, 5);
+        $this->SetFont('Helvetica', 'B', 8);
+        $this->SetTextColor(255, 200, 1);
+        $this->Cell(61, 5, 'ADMIT ONE', 0, 1, 'R');
+        $this->SetX(172);
+        $this->SetFont('Helvetica', '', 7);
+        $this->SetTextColor(255, 255, 255);
+        $this->Cell(61, 5, $ticket_number, 0, 1, 'R');
+
+        $this->SetXY(8, 30);
+        $this->SetFillColor(220, 252, 231);
+        $this->SetTextColor(22, 101, 52);
+        $this->SetFont('Helvetica', 'B', 8);
+        $this->Cell(28, 7, 'VALID - PAID', 0, 0, 'C', true);
+
+        $this->SetXY(8, 42);
+        $this->SetTextColor(100, 112, 110);
+        $this->SetFont('Helvetica', 'B', 6.5);
+        $this->Cell(100, 4, 'PARTICIPANT', 0, 1);
+        $this->SetX(8);
+        $this->SetTextColor(23, 43, 59);
+        $this->fit_font(
+            DISI_Exporter::pdf_text($name),
+            150,
+            16,
+            10,
+            'B'
+        );
+        $this->Cell(
+            150,
+            9,
+            DISI_Exporter::pdf_text($name),
+            0,
+            1
+        );
+
+        $this->detail(
+            8,
+            59,
+            48,
+            'REGISTRATION NO.',
+            $registration_number
+        );
+        $this->detail(
+            58,
+            59,
+            48,
+            'REGISTRATION TYPE',
+            $registration_type
+        );
+        $this->detail(
+            108,
+            59,
+            51,
+            'PHONE',
+            $registration->phone
+        );
+        $this->detail(
+            8,
+            75,
+            98,
+            'EMAIL',
+            $registration->email
+        );
+        $this->detail(
+            108,
+            75,
+            51,
+            'ISSUED',
+            $registration->ticket_issued_at
+        );
+
+        $this->SetFillColor(83, 150, 92);
+        $this->Rect(0, 94, 165, 6, 'F');
+        $this->SetXY(8, 95);
+        $this->SetTextColor(255, 255, 255);
+        $this->SetFont('Helvetica', 'B', 6.5);
+        $this->Cell(
+            148,
+            4,
+            'PRESENT THIS TICKET AT THE EVENT ENTRANCE',
+            0,
+            0
+        );
+
+        $this->SetDrawColor(177, 190, 187);
+        for ($y = 27; $y < 96; $y += 4) {
+            $this->Line(165, $y, 165, min($y + 2, 96));
+        }
+
+        $this->SetXY(171, 30);
+        $this->SetTextColor(23, 43, 59);
+        $this->SetFont('Helvetica', 'B', 9);
+        $this->Cell(61, 5, 'SCAN TO VERIFY', 0, 1, 'C');
+
         DISI_Ticketing::draw_pdf_qr(
             $this,
             $ticket_url,
-            76,
-            186,
-            58
+            178,
+            38,
+            47
         );
 
-        $this->SetY(246);
+        $this->SetXY(171, 87);
         $this->SetTextColor(23, 43, 59);
-        $this->SetFont('Helvetica', 'B', 9);
+        $this->SetFont('Helvetica', 'B', 7.5);
         $this->Cell(
-            0,
-            6,
-            DISI_Exporter::pdf_text(
-                DISI_Ticketing::ticket_number($registration)
-            ),
+            61,
+            4,
+            DISI_Exporter::pdf_text($ticket_number),
             0,
             1,
             'C'
         );
-        $this->SetFont('Helvetica', '', 8);
+        $this->SetX(171);
+        $this->SetFont('Helvetica', '', 5.8);
         $this->SetTextColor(100, 112, 110);
-        $this->MultiCell(
+        $this->Cell(
+            61,
+            4,
+            'Secure electronic ticket',
             0,
-            5,
-            'Scan the QR code to open the secure electronic copy. Keep this ticket private.',
             0,
             'C'
         );
     }
 
-    private function field($label, $value) {
+    private function detail($x, $y, $width, $label, $value) {
 
+        $this->SetXY($x, $y);
         $this->SetTextColor(100, 112, 110);
-        $this->SetFont('Helvetica', '', 8);
-        $this->Cell(45, 7, $label, 0, 0);
+        $this->SetFont('Helvetica', 'B', 6);
+        $this->Cell($width, 4, $label, 0, 1);
+        $this->SetX($x);
         $this->SetTextColor(23, 43, 59);
-        $this->SetFont('Helvetica', 'B', 10);
-        $this->MultiCell(
-            0,
-            7,
+        $this->fit_font(
+            DISI_Exporter::pdf_text($value ?: '-'),
+            $width,
+            8.5,
+            6.5,
+            'B'
+        );
+        $this->Cell(
+            $width,
+            6,
             DISI_Exporter::pdf_text($value ?: '-'),
             0,
-            'L'
+            0
         );
+    }
+
+    private function fit_font(
+        $text,
+        $width,
+        $maximum,
+        $minimum,
+        $style = ''
+    ) {
+
+        $size = $maximum;
+        $this->SetFont('Helvetica', $style, $size);
+
+        while (
+            $size > $minimum &&
+            $this->GetStringWidth($text) > $width
+        ) {
+            $size -= 0.5;
+            $this->SetFont('Helvetica', $style, $size);
+        }
     }
 }

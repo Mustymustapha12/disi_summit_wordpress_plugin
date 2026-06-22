@@ -56,6 +56,7 @@ Main features:
 - Approved registrations with verified paid status receive a secure E-ticket automatically by email.
 - E-ticket emails include a branded PDF attachment, a secure electronic-ticket link, participant details, and a QR code.
 - The QR code directs event staff to the participant's secure electronic ticket.
+- Printable PDF tickets use a medium landscape boarding-pass layout with a participant section, perforated divider, and QR verification stub.
 - The E-ticketing admin menu lists all approved and paid participants with ticket issue time, email delivery time, scan count, and latest scan time.
 - Admins can issue missing tickets, resend ticket emails, and preview electronic tickets without increasing the scan count.
 - Opening a valid participant ticket records the scan count and latest scan time for admin tracking.
