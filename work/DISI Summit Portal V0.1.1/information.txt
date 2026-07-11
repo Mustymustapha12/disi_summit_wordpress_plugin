@@ -1,5 +1,5 @@
 DISI Summit Portal
-Version: 0.5.5
+Version: 0.5.6
 
 This plugin manages DISI Summit 2026 registrations inside WordPress.
 
@@ -113,3 +113,11 @@ Version 0.5.5 update:
 - Adds a Paystack webhook endpoint at
   /wp-admin/admin-post.php?action=disi_paystack_webhook with Paystack signature
   verification, so successful payment events can be handled server-to-server.
+
+Version 0.5.6 update:
+- Accepts successful Paystack payments when Paystack charges the participant
+  more than the registration amount because of customer-borne Paystack fees.
+- Keeps protection against underpayment by rejecting transactions where Paystack
+  reports less than the expected registration amount.
+- Amount mismatch errors now show both the Paystack paid amount and the plugin's
+  expected amount.

@@ -922,7 +922,7 @@ class DISI_Registration_Manager {
             $mismatches[] = 'reference';
         }
 
-        if ($transaction_amount !== $expected_amount) {
+        if ($transaction_amount < $expected_amount) {
             $mismatches[] = 'amount';
         }
 
@@ -942,6 +942,10 @@ class DISI_Registration_Manager {
                 'payment_verification_mismatch',
                 'The Paystack transaction is paid, but these details do not match this registration: ' .
                 implode(', ', $mismatches) .
+                '. If the mismatch is amount, Paystack reported ' .
+                self::format_kobo_amount($transaction_amount) .
+                ' while this registration expects at least ' .
+                self::format_kobo_amount($expected_amount) .
                 '.'
             );
         }
@@ -1023,6 +1027,11 @@ class DISI_Registration_Manager {
         }
 
         return true;
+    }
+
+    private static function format_kobo_amount($amount) {
+
+        return '₦' . number_format(floatval($amount) / 100, 2);
     }
 
     public static function get_by_paystack_reference($reference) {

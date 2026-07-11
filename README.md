@@ -5,10 +5,10 @@ payment notifications, and form-provider integration.
 
 ## Latest Release
 
-Version `0.5.5`
+Version `0.5.6`
 
 Installable package:
-`outputs/disi-summit-portal-v0.5.5.zip`
+`outputs/disi-summit-portal-v0.5.6.zip`
 
 ## Source
 
@@ -20,10 +20,19 @@ plugin during ZIP uploads instead of creating a second plugin.
 
 ## Site Approval
 
-Version `0.5.5` requires a signed approval key for each WordPress
+Version `0.5.6` requires a signed approval key for each WordPress
 installation. The owner-only generator is documented in
 `owner-tools/README.md`. Its private signing key is excluded from Git and from
 the installable plugin package.
+
+## Version 0.5.6
+
+- Accepts successful Paystack payments when Paystack charges the customer above
+  the expected registration amount because of customer-borne fees.
+- Still rejects underpayments where Paystack reports less than the registration
+  amount expected by the plugin.
+- Shows the Paystack paid amount and expected amount if an amount mismatch is
+  still detected.
 
 ## Version 0.5.5
 

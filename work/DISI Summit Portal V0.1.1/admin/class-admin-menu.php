@@ -38,7 +38,7 @@ class DISI_Admin_Menu {
 
         add_menu_page(
             $licensed
-                ? 'DISI Summit Portal V0.5.5'
+                ? 'DISI Summit Portal V0.5.6'
                 : 'DISI Portal Approval Required',
             'DISI Portal',
             DISI_MANAGE_CAPABILITY,
