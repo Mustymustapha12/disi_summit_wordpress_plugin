@@ -392,6 +392,38 @@ $amount_fields = [
                 </td>
             </tr>
 
+            <tr>
+                <th>Paystack Live Callback URL</th>
+                <td>
+                    <input
+                        type="url"
+                        class="regular-text code"
+                        readonly
+                        onclick="this.select();"
+                        value="<?php echo esc_attr(DISI_Paystack::callback_url()); ?>"
+                    >
+                    <p class="description">
+                        Add this as your Paystack Dashboard callback URL.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <th>Paystack Live Webhook URL</th>
+                <td>
+                    <input
+                        type="url"
+                        class="regular-text code"
+                        readonly
+                        onclick="this.select();"
+                        value="<?php echo esc_attr(DISI_Paystack::webhook_url()); ?>"
+                    >
+                    <p class="description">
+                        Add this as your Paystack Dashboard webhook URL.
+                    </p>
+                </td>
+            </tr>
+
             <?php foreach ($amount_fields as $field => $label) : ?>
 
                 <tr>

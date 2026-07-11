@@ -1,5 +1,5 @@
 DISI Summit Portal
-Version: 0.5.4
+Version: 0.5.5
 
 This plugin manages DISI Summit 2026 registrations inside WordPress.
 
@@ -100,3 +100,16 @@ Owner approval workflow:
 
 Upload behavior:
 - The plugin package uses a stable internal plugin folder so uploading newer versions replaces the previously installed DISI Summit Portal instead of installing a separate plugin.
+
+Version 0.5.5 update:
+- Fixes repeated WordPress upgrade warnings from wp-admin/includes/upgrade.php
+  by replacing repeated dbDelta table checks with direct CREATE TABLE IF NOT
+  EXISTS statements and the existing manual schema upgrade logic.
+- Fixes successful Paystack payments being rejected by the dashboard when
+  Paystack returns metadata or customer email in a different format.
+- Payment verification now keeps the critical reference, amount, currency, and
+  live/test mode checks, and shows the exact critical mismatch when verification
+  cannot be completed.
+- Adds a Paystack webhook endpoint at
+  /wp-admin/admin-post.php?action=disi_paystack_webhook with Paystack signature
+  verification, so successful payment events can be handled server-to-server.

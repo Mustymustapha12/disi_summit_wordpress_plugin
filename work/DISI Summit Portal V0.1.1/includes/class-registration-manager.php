@@ -903,29 +903,46 @@ class DISI_Registration_Manager {
         $expected_amount = (int) round(
             self::normalize_amount($registration->total_amount ?? 0) * 100
         );
-        $metadata = $transaction['metadata'] ?? [];
-
-        if (is_string($metadata)) {
-            $metadata = json_decode($metadata, true);
-        }
-
-        $valid = (
-            ($transaction['reference'] ?? '') === $reference &&
-            intval($transaction['amount'] ?? 0) === $expected_amount &&
-            ($transaction['currency'] ?? '') === 'NGN' &&
-            sanitize_email(
-                $transaction['customer']['email'] ?? ''
-            ) === sanitize_email($registration->email) &&
-            ($transaction['domain'] ?? '') ===
-                ($registration->paystack_mode ?? 'test') &&
-            intval($metadata['registration_id'] ?? 0) ===
-                intval($registration->id)
+        $mismatches = [];
+        $transaction_reference = sanitize_text_field(
+            $transaction['reference'] ?? ''
+        );
+        $transaction_amount = intval($transaction['amount'] ?? 0);
+        $transaction_currency = strtoupper(
+            sanitize_text_field($transaction['currency'] ?? '')
+        );
+        $transaction_domain = sanitize_text_field(
+            $transaction['domain'] ?? ''
+        );
+        $expected_domain = sanitize_text_field(
+            $registration->paystack_mode ?? 'test'
         );
 
-        if (!$valid) {
+        if ($transaction_reference !== $reference) {
+            $mismatches[] = 'reference';
+        }
+
+        if ($transaction_amount !== $expected_amount) {
+            $mismatches[] = 'amount';
+        }
+
+        if ($transaction_currency !== 'NGN') {
+            $mismatches[] = 'currency';
+        }
+
+        if (
+            !empty($transaction_domain) &&
+            $transaction_domain !== $expected_domain
+        ) {
+            $mismatches[] = 'mode';
+        }
+
+        if (!empty($mismatches)) {
             return new WP_Error(
                 'payment_verification_mismatch',
-                'The Paystack transaction does not match this registration.'
+                'The Paystack transaction is paid, but these details do not match this registration: ' .
+                implode(', ', $mismatches) .
+                '.'
             );
         }
 

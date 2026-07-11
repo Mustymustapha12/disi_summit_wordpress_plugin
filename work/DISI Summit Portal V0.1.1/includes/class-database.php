@@ -13,15 +13,13 @@ class DISI_Database {
 
         global $wpdb;
 
-        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-
         $charset_collate = $wpdb->get_charset_collate();
 
         $table = $wpdb->prefix . 'disi_registrations';
         $sponsorship_table = $wpdb->prefix . 'disi_sponsorship_enquiries';
         $duplicate_table = $wpdb->prefix . 'disi_duplicate_entries';
 
-        $sql = "CREATE TABLE {$table} (
+        $sql = "CREATE TABLE IF NOT EXISTS {$table} (
 
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 
@@ -107,9 +105,9 @@ class DISI_Database {
 
         ) {$charset_collate};";
 
-        dbDelta($sql);
+        $wpdb->query($sql);
 
-        $sponsorship_sql = "CREATE TABLE {$sponsorship_table} (
+        $sponsorship_sql = "CREATE TABLE IF NOT EXISTS {$sponsorship_table} (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             source_plugin VARCHAR(50) NULL,
             form_id BIGINT NULL,
@@ -129,9 +127,9 @@ class DISI_Database {
             KEY status_idx (status)
         ) {$charset_collate};";
 
-        dbDelta($sponsorship_sql);
+        $wpdb->query($sponsorship_sql);
 
-        $duplicate_sql = "CREATE TABLE {$duplicate_table} (
+        $duplicate_sql = "CREATE TABLE IF NOT EXISTS {$duplicate_table} (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             registration_type VARCHAR(50) NULL,
             source_plugin VARCHAR(50) NULL,
@@ -161,7 +159,7 @@ class DISI_Database {
             KEY source_entry_idx (source_plugin, form_id, source_entry_id)
         ) {$charset_collate};";
 
-        dbDelta($duplicate_sql);
+        $wpdb->query($duplicate_sql);
     }
 
     /**

@@ -5,10 +5,10 @@ payment notifications, and form-provider integration.
 
 ## Latest Release
 
-Version `0.5.4`
+Version `0.5.5`
 
 Installable package:
-`outputs/disi-summit-portal-v0.5.4.zip`
+`outputs/disi-summit-portal-v0.5.5.zip`
 
 ## Source
 
@@ -20,10 +20,22 @@ plugin during ZIP uploads instead of creating a second plugin.
 
 ## Site Approval
 
-Version `0.5.4` requires a signed approval key for each WordPress
+Version `0.5.5` requires a signed approval key for each WordPress
 installation. The owner-only generator is documented in
 `owner-tools/README.md`. Its private signing key is excluded from Git and from
 the installable plugin package.
+
+## Version 0.5.5
+
+- Fixes repeated WordPress upgrade warnings by replacing repeated `dbDelta()`
+  calls with direct `CREATE TABLE IF NOT EXISTS` table creation.
+- Fixes Paystack paid transactions being rejected because Paystack returned
+  metadata or customer email differently from the stored registration.
+- Verification now keeps the critical reference, amount, currency, and live/test
+  mode checks, and reports the exact mismatch if any critical value fails.
+- Adds a Paystack webhook endpoint:
+  `/wp-admin/admin-post.php?action=disi_paystack_webhook`
+  with Paystack signature verification.
 
 ## Version 0.5.4
 

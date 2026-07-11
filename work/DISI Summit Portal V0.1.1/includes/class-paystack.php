@@ -19,6 +19,16 @@ class DISI_Paystack {
             'admin_post_nopriv_disi_paystack_callback',
             [$this, 'handle_callback']
         );
+
+        add_action(
+            'admin_post_disi_paystack_webhook',
+            [$this, 'handle_webhook']
+        );
+
+        add_action(
+            'admin_post_nopriv_disi_paystack_webhook',
+            [$this, 'handle_webhook']
+        );
     }
 
     public static function initialize_transaction($registration) {
@@ -197,11 +207,70 @@ class DISI_Paystack {
         exit;
     }
 
-    private static function callback_url() {
+    public function handle_webhook() {
+
+        $payload = file_get_contents('php://input');
+        $signature = sanitize_text_field(
+            wp_unslash($_SERVER['HTTP_X_PAYSTACK_SIGNATURE'] ?? '')
+        );
+        $config = DISI_Settings::get_configuration();
+        $secret_key = trim($config['paystack_secret_key'] ?? '');
+
+        if (
+            empty($payload) ||
+            empty($signature) ||
+            empty($secret_key)
+        ) {
+            status_header(400);
+            exit;
+        }
+
+        $expected_signature = hash_hmac(
+            'sha512',
+            $payload,
+            $secret_key
+        );
+
+        if (!hash_equals($expected_signature, $signature)) {
+            status_header(401);
+            exit;
+        }
+
+        $event = json_decode($payload, true);
+
+        if (!is_array($event)) {
+            status_header(400);
+            exit;
+        }
+
+        if (($event['event'] ?? '') === 'charge.success') {
+            $reference = sanitize_text_field(
+                $event['data']['reference'] ?? ''
+            );
+
+            if (!empty($reference)) {
+                DISI_Registration_Manager::verify_payment($reference);
+            }
+        }
+
+        status_header(200);
+        exit;
+    }
+
+    public static function callback_url() {
 
         return add_query_arg(
             'action',
             'disi_paystack_callback',
+            admin_url('admin-post.php')
+        );
+    }
+
+    public static function webhook_url() {
+
+        return add_query_arg(
+            'action',
+            'disi_paystack_webhook',
             admin_url('admin-post.php')
         );
     }
