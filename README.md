@@ -5,10 +5,10 @@ payment notifications, and form-provider integration.
 
 ## Latest Release
 
-Version `0.5.6`
+Version `0.5.7`
 
 Installable package:
-`outputs/disi-summit-portal-v0.5.6.zip`
+`outputs/disi-summit-portal-v0.5.7.zip`
 
 ## Source
 
@@ -20,10 +20,17 @@ plugin during ZIP uploads instead of creating a second plugin.
 
 ## Site Approval
 
-Version `0.5.6` requires a signed approval key for each WordPress
+Version `0.5.7` requires a signed approval key for each WordPress
 installation. The owner-only generator is documented in
 `owner-tools/README.md`. Its private signing key is excluded from Git and from
 the installable plugin package.
+
+## Version 0.5.7
+
+- Fixes Forminator sponsorship enquiry field labels showing generic names such
+  as Input Text, Numeric Field, or similar instead of the configured field label.
+- Forminator field capture now prefers the actual saved field label before
+  falling back to provider entry labels or generated field IDs.
 
 ## Version 0.5.6
 

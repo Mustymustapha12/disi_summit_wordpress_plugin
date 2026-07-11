@@ -1,5 +1,5 @@
 DISI Summit Portal
-Version: 0.5.6
+Version: 0.5.7
 
 This plugin manages DISI Summit 2026 registrations inside WordPress.
 
@@ -121,3 +121,10 @@ Version 0.5.6 update:
   reports less than the expected registration amount.
 - Amount mismatch errors now show both the Paystack paid amount and the plugin's
   expected amount.
+
+Version 0.5.7 update:
+- Fixes Forminator sponsorship enquiry submitted fields showing generic labels
+  such as Input Text or Numeric Field instead of the configured field names.
+- Forminator capture now prefers configured field labels from the form field
+  settings and only falls back to generated field IDs when no better label is
+  available.
